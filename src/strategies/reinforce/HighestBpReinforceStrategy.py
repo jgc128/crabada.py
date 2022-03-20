@@ -1,7 +1,7 @@
 from typing import Any, List
 from src.libs.CrabadaWeb2Client.types import CrabForLending, Game
 from src.strategies.reinforce.ReinforceStrategy import ReinforceStrategy
-from src.helpers.general import firstOrNone
+from src.helpers.general import firstOrNone, fourthOrNone, secondOrNone, thirdOrNone
 from src.helpers.price import weiToTus
 
 
@@ -25,4 +25,9 @@ class HighestBpReinforceStrategy(ReinforceStrategy):
         sortedAffordableCrabs = sorted(
             affordableCrabs, key=lambda c: (-c["battle_point"], c["price"])
         )
-        return firstOrNone(sortedAffordableCrabs)
+        return (
+            fourthOrNone(sortedAffordableCrabs)
+            or thirdOrNone(sortedAffordableCrabs)
+            or secondOrNone(sortedAffordableCrabs)
+            or firstOrNone(sortedAffordableCrabs)
+        )
