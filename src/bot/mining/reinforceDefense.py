@@ -12,7 +12,7 @@ from src.common.txLogger import txLogger, logTx
 from src.helpers.mines import fetchOpenMines
 from src.helpers.reinforce import minerCanReinforce
 from src.helpers.sms import sendSms
-from src.common.clients import crabadaWeb3Client
+from src.common.clients import crabadaWeb3Client, crabadaWeb2Client
 from src.models.User import User
 from src.strategies.reinforce.ReinforceStrategyFactory import getBestReinforcement
 from time import sleep
@@ -35,26 +35,38 @@ def reinforceDefense(user: User) -> int:
     # Reinforce the mines
     nBorrowedReinforments = 0
     for mine in reinforceableMines:
-
-        # Find best reinforcement crab to borrow
         mineId = mine["game_id"]
-        maxPrice = user.config["reinforcementMaxPriceInTus"]
-        strategyName = user.getTeamConfig(mine["team_id"]).get("reinforceStrategyName")
-        try:
-            crab = getBestReinforcement(user, mine, maxPrice)
-        except (ReinforcementTooExpensive, NoSuitableReinforcementFound) as e:
-            logger.warning(e.__class__.__name__ + ": " + str(e))
-            continue
 
-        # Some strategies might return no reinforcement
-        if not crab:
-            continue
+        # try to use your own crabs
+        available_crabs = crabadaWeb2Client.listCrabsForSelfReinforce(user.address)
+        if len(available_crabs) > 0:
+            available_crabs = sorted(available_crabs, key=lambda c: -c["mine_point"])
 
-        crabId = crab["crabada_id"]
-        price = crab["price"]
-        logger.info(
-            f"Borrowing crab {crabId} for mine {mineId} at {Web3.fromWei(price, 'ether')} TUS... [strategy={strategyName}, BP={crab['battle_point']}, MP={crab['mine_point']}]"
-        )
+            crab = available_crabs[0]
+            crabId = crab["crabada_id"]
+            price = 0
+            logger.info(
+                f"Using self crabs for reinforcement {crabId} for mine {mineId} [BP={crab['battle_point']}, MP={crab['mine_point']}]"
+            )
+        else:
+            # Find best reinforcement crab to borrow
+            maxPrice = user.config["reinforcementMaxPriceInTus"]
+            strategyName = user.getTeamConfig(mine["team_id"]).get("reinforceStrategyName")
+            try:
+                crab = getBestReinforcement(user, mine, maxPrice)
+            except (ReinforcementTooExpensive, NoSuitableReinforcementFound) as e:
+                logger.warning(e.__class__.__name__ + ": " + str(e))
+                continue
+
+            # Some strategies might return no reinforcement
+            if not crab:
+                continue
+
+            crabId = crab["crabada_id"]
+            price = crab["price"]
+            logger.info(
+                f"Borrowing crab {crabId} for mine {mineId} at {Web3.fromWei(price, 'ether')} TUS... [strategy={strategyName}, BP={crab['battle_point']}, MP={crab['mine_point']}]"
+            )
 
         # Borrow the crab
         txHash = crabadaWeb3Client.reinforceDefense(mineId, crabId, price)

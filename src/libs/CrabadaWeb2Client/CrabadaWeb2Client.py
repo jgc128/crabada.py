@@ -3,7 +3,7 @@ from eth_typing import Address
 import requests
 from src.helpers.general import firstOrNone, secondOrNone
 
-from src.libs.CrabadaWeb2Client.types import CrabForLending, Game, Team
+from src.libs.CrabadaWeb2Client.types import CrabForLending, Game, Team, CrabForSelfReinforce
 
 
 class CrabadaWeb2Client:
@@ -177,4 +177,26 @@ class CrabadaWeb2Client:
             "order": "asc",
         }
         actualParams = defaultParams | params
+        return requests.request("GET", url, params=actualParams).json()  # type: ignore
+
+
+    def listCrabsForSelfReinforce(self, userAddress: Address, params: dict[str, Any] = {}) -> List[CrabForSelfReinforce]:
+        res = self.listCrabsForSelfReinforce_Raw(userAddress, params)
+        try:
+            return res["result"]["data"] or []
+        except:
+            return []
+
+
+    def listCrabsForSelfReinforce_Raw(self, userAddress: Address, params: dict[str, Any] = {}) -> Any:
+        # https://idle-api.crabada.com/public/idle/crabadas/in-game?user_address=0x99c8ae76db2a3eeb60f95c5580ec7417f5715393&page=1&limit=15&order=desc&orderBy=battle_point
+        # https://idle-api.crabada.com/public/idle/crabadas/can-join-team?user_address=0x99c8ae76db2a3eeb60f95c5580ec7417f5715393
+        
+        url = self.baseUri + "/crabadas/can-join-team"
+        defaultParams = {
+            "limit": 10,
+            "page": 1,
+        }
+        actualParams = defaultParams | params
+        actualParams["user_address"] = userAddress
         return requests.request("GET", url, params=actualParams).json()  # type: ignore

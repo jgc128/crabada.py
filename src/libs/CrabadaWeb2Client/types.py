@@ -148,3 +148,11 @@ class CrabForLending(TypedDict):
     battle_point: int
     time_point: int
     mine_point: int
+
+class CrabForSelfReinforce(TypedDict):
+    crabada_id: int
+    id: int  # it seems to be the same as crabada_id...
+    crabada_name: str
+    battle_point: int
+    time_point: int
+    mine_point: int
