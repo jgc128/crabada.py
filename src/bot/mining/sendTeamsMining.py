@@ -11,7 +11,7 @@ from src.models.User import User
 from web3.exceptions import ContractLogicError
 
 
-def sendTeamsMining(user: User) -> int:
+def sendTeamsMining(user: User, loot_point_filter=False) -> int:
     """
     Send mining the available teams with the 'mine' task.
 
@@ -20,8 +20,15 @@ def sendTeamsMining(user: User) -> int:
     client = makeCrabadaWeb3Client()
     availableTeams = fetchAvailableTeamsForTask(user, "mine")
 
+    if loot_point_filter:
+        availableTeams = [
+            team for team in availableTeams if team['looting_point'] == 0
+        ]
+
     if not availableTeams:
-        logger.info("No available teams to send mining for user " + str(user.address))
+        logger.info(
+            "No available teams to send mining for user " + str(user.address)
+        )
         return 0
 
     # Send the teams
