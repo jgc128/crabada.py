@@ -33,7 +33,7 @@ def mineCanBeSettled(mine: Game) -> bool:
     return (
         attackIsOver(mine)
         and not mineIsSettled(mine)  # can't settle if already settled
-        and getElapsedTime(mine) > 3600  # can't settle before one hour since start
+        and getElapsedTime(mine) > 3600 + 60 * 3  # can't settle before one hour since start
     )
 
 

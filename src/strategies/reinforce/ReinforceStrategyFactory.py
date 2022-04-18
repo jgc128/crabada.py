@@ -62,8 +62,23 @@ def getBestReinforcement(
 
     crab: CrabForLending = None
 
+    # for looting - use HighestBpFromInventory, HighestBpHighCost, HighestBp
+    # for mining - use HighestMpFromInventory, HighestMpHighCost, HighestMp
+    if lootingOrMining == "LOOTING":
+        strategies = [
+            "HighestBpFromInventory", "HighestBpHighCost", "HighestBp",
+        ]
+    elif lootingOrMining == "MINING":
+        strategies = [
+            "HighestMpFromInventory", "HighestMpHighCost", "HighestMp",
+        ]
+    else:
+        raise StrategyException(
+            f"Team is neither LOOTING nor MINING [{lootingOrMining}]"
+        )
+
     # Return the crab to borrow using the first suitable strategy
-    for strategyName in teamConfig["reinforceStrategies"]:
+    for strategyName in strategies:  # teamConfig["reinforceStrategies"]:
         strategy: ReinforceStrategy = makeReinforceStrategy(
             strategyName, user, teamConfig, mine, maxPrice
         )
@@ -89,7 +104,8 @@ def makeReinforceStrategy(
             f"Cound not find a reinforceStrategy named {strategyName}"
         )
     if not issubclass(strategyClass, (ReinforceStrategy)):
-        raise StrategyException(f"Error fetching reinforce strategy {strategyName}")
+        raise StrategyException(
+            f"Error fetching reinforce strategy {strategyName}")
 
     return strategyClass(user, teamConfig, makeCrabadaWeb2Client()).setParams(
         mine, maxPrice
