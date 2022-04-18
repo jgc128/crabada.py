@@ -11,7 +11,7 @@ from src.models.User import User
 from web3.exceptions import ContractLogicError
 
 
-def sendTeamsMining(user: User, loot_point_filter=False) -> int:
+def sendTeamsMining(user: User, loot_point_filter=False, limit=None) -> int:
     """
     Send mining the available teams with the 'mine' task.
 
@@ -56,5 +56,8 @@ def sendTeamsMining(user: User, loot_point_filter=False) -> int:
             nSentTeams += 1
             logger.info(f"Team {teamId} sent successfully")
             sendIM(f"Team {teamId} sent successfully")
+
+        if limit is not None and nSentTeams >= limit:
+            break
 
     return nSentTeams
