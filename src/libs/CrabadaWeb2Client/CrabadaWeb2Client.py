@@ -24,6 +24,43 @@ class CrabadaWeb2Client:
 
     baseUri = "https://idle-api.crabada.com/public/idle"
 
+
+    def _get_headers(self):
+        user_agent = (
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) '
+            'Chrome/102.0.4963.0 Safari/537.36 Edg/102.0.1219.0'
+        )
+        headers = {
+            'authority': 'idle-api.crabada.com',
+            'accept': 'application/json, text/plain, */*',
+            'accept-language': 'en-US,en;q=0.9,ru;q=0.8',
+            'dnt': '1',
+            'if-none-match': 'W/"1b97-wr94mmOO5a2v9vzB0QcuXtYpOLs"',
+            'origin': 'https://play.crabada.com',
+            'referer': 'https://play.crabada.com/',
+            'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="102", "Microsoft Edge";v="102"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"macOS"',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-site',
+            'user-agent': user_agent,
+        }
+
+        return headers
+
+    def _request(self, url, params):
+        headers = self._get_headers()
+        r = requests.request("GET", url, params=params, headers=headers)
+
+        if r.status_code != 200:
+            print('Error:', r.status_code)
+            print(r.text)
+
+        result = r.json()
+
+        return result
+
     def getMine(self, mineId: int, params: dict[str, Any] = {}) -> Game:
         """Get information from the given mine"""
         res = self.getMine_Raw(mineId, params)
@@ -31,7 +68,8 @@ class CrabadaWeb2Client:
 
     def getMine_Raw(self, mineId: int, params: dict[str, Any] = {}) -> Any:
         url = self.baseUri + "/mine/" + str(mineId)
-        return requests.request("GET", url, params=params).json()
+        response = self._request(url, params)
+        return response
 
     def listMines(self, params: dict[str, Any] = {}) -> List[Game]:
         """
@@ -95,7 +133,8 @@ class CrabadaWeb2Client:
             "page": 1,
         }
         actualParams = defaultParams | params
-        return requests.request("GET", url, params=actualParams).json()
+        response = self._request(url, actualParams)
+        return response
 
     def getTeam(self) -> None:
         raise Exception("The team route does not exit on the server!")
@@ -134,7 +173,9 @@ class CrabadaWeb2Client:
         }
         actualParams = defaultParams | params
         actualParams["user_address"] = userAddress
-        return requests.request("GET", url, params=actualParams).json()
+
+        response = self._request(url, actualParams)
+        return response
 
     def listCrabsForLending(self, params: dict[str, Any] = {}) -> List[CrabForLending]:
         """
@@ -183,7 +224,9 @@ class CrabadaWeb2Client:
             "order": "asc",
         }
         actualParams = defaultParams | params
-        return requests.request("GET", url, params=actualParams).json()  # type: ignore
+
+        response = self._request(url, actualParams)
+        return response
 
     def listCrabsFromInventory(
         self, userAddress: Address, params: dict[str, Any] = {}
@@ -203,4 +246,6 @@ class CrabadaWeb2Client:
     ) -> Any:
         url = self.baseUri + "/crabadas/can-join-team"
         params["user_address"] = userAddress
-        return requests.request("GET", url, params=params).json()
+
+        response = self._request(url, params)
+        return response
