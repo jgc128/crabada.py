@@ -17,7 +17,9 @@ def sendTeamsMining(user: User, loot_point_filter=False, limit=None) -> int:
 
     Returns the opened mines
     """
-    client = makeCrabadaWeb3Client()
+    client = makeCrabadaWeb3Client(
+        upperLimitForBaseFeeInGwei=user.config["mineMaxGasInGwei"]
+    )
     availableTeams = fetchAvailableTeamsForTask(user, "mine")
 
     if loot_point_filter:

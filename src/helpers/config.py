@@ -67,6 +67,10 @@ def parseUserConfig(userNumber: int, teams: List[ConfigTeam]) -> ConfigUser:
         "reinforcementMaxGasInGwei": parseFloat(
             f"{userPrefix}_REINFORCEMENT_MAX_GAS", float("inf")
         ),
+        "mineMaxGasInGwei": parseFloat(f"{userPrefix}_MINE_MAX_GAS", float("inf")),
+        "closeMineMaxGasInGwei": parseFloat(
+            f"{userPrefix}_CLOSE_MINE_MAX_GAS", float("inf")
+        ),
         "teams": [t for t in teams if t["userAddress"] == address],
     }
 
