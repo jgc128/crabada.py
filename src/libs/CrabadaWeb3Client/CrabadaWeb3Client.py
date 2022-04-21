@@ -85,7 +85,7 @@ class CrabadaWeb3Client(AvalancheCWeb3Client):
 
         contract_fn = self.contract.functions.reinforceDefense(gameId, crabadaId, borrowPrice)
         contract_fn.call({'from': self.userAddress})
-        sleep(1)
+        sleep(2)
         contract_fn.call({'from': self.userAddress})
 
         tx: TxParams = self.buildContractTransaction(contract_fn)
@@ -99,7 +99,7 @@ class CrabadaWeb3Client(AvalancheCWeb3Client):
 
         contract_fn = self.contract.functions.reinforceAttack(gameId, crabadaId, borrowPrice)
         contract_fn.call({'from': self.userAddress})
-        sleep(1)
+        sleep(2)
         contract_fn.call({'from': self.userAddress})
 
         tx: TxParams = self.buildContractTransaction(contract_fn)

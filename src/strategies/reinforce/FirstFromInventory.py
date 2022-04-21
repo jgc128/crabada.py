@@ -20,5 +20,10 @@ class FirstFromInventory(ReinforceStrategy):
         query() returns None, so crabs list given here should be empty as
         well; we can replace it with our custom ultimate-crab-getting-logic
         """
+
         inventoryCrabs = self.web2Client.listCrabsFromInventory(self.user.address)
-        return [convertCrabFromInventory(c) for c in inventoryCrabs]
+        crabs = [convertCrabFromInventory(c) for c in inventoryCrabs]
+
+        crabs = super().process(game, crabs)
+        
+        return crabs

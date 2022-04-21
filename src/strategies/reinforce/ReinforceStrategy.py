@@ -45,6 +45,13 @@ class ReinforceStrategy(Strategy):
     maxPrice2: Tus
     """
 
+    _BAD_CRABS = set()
+
+    @staticmethod
+    def mark_crab_bad(crab):
+        ReinforceStrategy._BAD_CRABS.add(crab['crabada_id'])
+
+
     def setParams(self, game: Game, maxPrice: Tus, maxPrice2: Tus = None) -> Strategy:
         """
         Parameters for a generic reinforce strategy
@@ -75,8 +82,13 @@ class ReinforceStrategy(Strategy):
         A typical processing is to sort the list by price or stats,
         or filter it according to some criterion.
 
-        By default, return the list unchanged.
+        By default, return the list unchanged except for the bad crabs.
         """
+        if crabs is not None:
+            print(f'Before bad crabs: {len(crabs)}')
+            crabs = [crab for crab in crabs if crab['crabada_id'] not in ReinforceStrategy._BAD_CRABS]
+            print(f'After bad crabs: {len(crabs)}')
+
         return crabs
 
     def pick(self, game: Game, crabs: List[CrabForLending]) -> CrabForLending:

@@ -11,6 +11,7 @@ from src.helpers.mines import fetchOpenLoots
 from src.helpers.reinforce import looterCanReinforce
 from src.common.clients import makeCrabadaWeb3Client
 from src.models.User import User
+from src.strategies.reinforce.ReinforceStrategy import ReinforceStrategy
 from src.strategies.reinforce.ReinforceStrategyFactory import getBestReinforcement
 from time import sleep
 from src.common.config import reinforceDelayInSeconds
@@ -39,50 +40,59 @@ def reinforceAttack(user: User) -> int:
 
     # Reinforce the mines
     nBorrowedReinforments = 0
+    nb_attempts = 10
     for mine in reinforceableMines:
-
-        # Find best reinforcement crab to borrow
         mineId = mine["game_id"]
         maxPrice = user.config["reinforcementMaxPriceInTus"]
-        try:
-            crab = getBestReinforcement(user, mine, maxPrice)
-        except NoSuitableReinforcementFound as e:
-            logger.warning(f"{e.__class__.__name__}: {e}")
-            continue
 
-        # Some strategies might return no reinforcement
-        if not crab:
-            continue
+        for attempt in range(nb_attempts):
+            print(f"Mine {mineId}, reinforce attempt {attempt}")
 
-        crabId = crab["crabada_id"]
-        price = crab["price"]
-        crabInfoMsg = f"Borrowing crab {crabId} for mine {mineId} at {Web3.fromWei(price, 'ether')} TUS... [BP={crab['battle_point']}, MP={crab['mine_point']}]"
-        logger.info(crabInfoMsg)  # TODO: also send to Telegram, asynchronously
+            # Find best reinforcement crab to borrow
+            try:
+                crab = getBestReinforcement(user, mine, maxPrice)
+            except NoSuitableReinforcementFound as e:
+                logger.warning(f"{e.__class__.__name__}: {e}")
+                break
 
-        # Borrow the crab
-        try:
-            txHash = client.reinforceAttack(mineId, crabId, price)
-        except (ContractLogicError, TransactionTooExpensive) as e:
-            logger.warning(f"Error reinforcing loot {mineId}: {e}")
-            sendIM(f"Error reinforcing loot {mineId}: {e}")
-            continue
+            # Some strategies might return no reinforcement
+            if not crab:
+                break
 
-        # Report
-        txLogger.info(txHash)
-        txReceipt = client.getTransactionReceipt(txHash)
-        logTx(txReceipt)
-        if txReceipt["status"] != 1:
-            logger.error(f"Error reinforcing loot {mineId}")
-            sendIM(crabInfoMsg)
-            sendIM(f"Error reinforcing loot {mineId}")
-        else:
-            nBorrowedReinforments += 1
-            logger.info(f"Loot {mineId} reinforced correctly")
-            sendIM(crabInfoMsg)
-            sendIM(f"Loot {mineId} reinforced correctly")
+            crabId = crab["crabada_id"]
+            price = crab["price"]
+            crabInfoMsg = f"Borrowing crab {crabId} for mine {mineId} at {Web3.fromWei(price, 'ether')} TUS... [BP={crab['battle_point']}, MP={crab['mine_point']}]"
+            logger.info(crabInfoMsg)  # TODO: also send to Telegram, asynchronously
 
-        # Wait some time to avoid renting the same crab for different teams
-        if len(reinforceableMines) > 1:
-            sleep(reinforceDelayInSeconds)
+            # Borrow the crab
+            try:
+                txHash = client.reinforceAttack(mineId, crabId, price)
+            except (ContractLogicError, TransactionTooExpensive) as e:
+                logger.warning(f"Error reinforcing loot {mineId}: {e}")
+                sendIM(f"Error reinforcing loot {mineId}: {e}")
+
+                ReinforceStrategy.mark_crab_bad(crab)
+                sleep(2)
+                continue
+
+            # Report
+            txLogger.info(txHash)
+            txReceipt = client.getTransactionReceipt(txHash)
+            logTx(txReceipt)
+            if txReceipt["status"] != 1:
+                logger.error(f"Error reinforcing loot {mineId}")
+                sendIM(crabInfoMsg)
+                sendIM(f"Error reinforcing loot {mineId}")
+            else:
+                nBorrowedReinforments += 1
+                logger.info(f"Loot {mineId} reinforced correctly")
+                sendIM(crabInfoMsg)
+                sendIM(f"Loot {mineId} reinforced correctly")
+
+            # Wait some time to avoid renting the same crab for different teams
+            if len(reinforceableMines) > 1:
+                sleep(reinforceDelayInSeconds)
+
+            break
 
     return nBorrowedReinforments

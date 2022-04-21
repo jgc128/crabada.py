@@ -11,6 +11,7 @@ from src.helpers.reinforce import minerCanReinforce
 from src.helpers.instantMessage import sendIM
 from src.common.clients import makeCrabadaWeb3Client
 from src.models.User import User
+from src.strategies.reinforce.ReinforceStrategy import ReinforceStrategy
 from src.strategies.reinforce.ReinforceStrategyFactory import getBestReinforcement
 from time import sleep
 from src.common.config import reinforceDelayInSeconds
@@ -39,50 +40,57 @@ def reinforceDefense(user: User) -> int:
 
     # Reinforce the mines
     nBorrowedReinforments = 0
+    nb_attempts = 10
     for mine in reinforceableMines:
-
-        # Find best reinforcement crab to borrow
         mineId = mine["game_id"]
         maxPrice = user.config["reinforcementMaxPriceInTus"]
-        try:
-            crab = getBestReinforcement(user, mine, maxPrice)
-        except NoSuitableReinforcementFound as e:
-            logger.warning(f"{e.__class__.__name__}: {e}")
-            continue
+        
+        for attempt in range(nb_attempts):
+            # Find best reinforcement crab to borrow
+            try:
+                crab = getBestReinforcement(user, mine, maxPrice)
+            except NoSuitableReinforcementFound as e:
+                logger.warning(f"{e.__class__.__name__}: {e}")
+                break
 
-        # Some strategies might return no reinforcement
-        if not crab:
-            continue
+            # Some strategies might return no reinforcement
+            if not crab:
+                break
 
-        crabId = crab["crabada_id"]
-        price = crab["price"]
-        crabInfoMsg = f"Borrowing crab {crabId} for mine {mineId} at {Web3.fromWei(price, 'ether')} TUS... [BP={crab['battle_point']}, MP={crab['mine_point']}]"
-        logger.info(crabInfoMsg)  # TODO: also send to Telegram, asynchronously
+            crabId = crab["crabada_id"]
+            price = crab["price"]
+            crabInfoMsg = f"Borrowing crab {crabId} for mine {mineId} at {Web3.fromWei(price, 'ether')} TUS... [BP={crab['battle_point']}, MP={crab['mine_point']}]"
+            logger.info(crabInfoMsg)  # TODO: also send to Telegram, asynchronously
 
-        # Borrow the crab
-        try:
-            txHash = client.reinforceDefense(mineId, crabId, price)
-        except (ContractLogicError, TransactionTooExpensive) as e:
-            logger.warning(f"Error reinforcing mine {mineId}: {e}")
-            sendIM(f"Error reinforcing mine {mineId}: {e}")
-            continue
+            # Borrow the crab
+            try:
+                txHash = client.reinforceDefense(mineId, crabId, price)
+            except (ContractLogicError, TransactionTooExpensive) as e:
+                logger.warning(f"Error reinforcing mine {mineId}: {e}")
+                sendIM(f"Error reinforcing mine {mineId}: {e}")
+                
+                ReinforceStrategy.mark_crab_bad(crab)
+                sleep(2)
+                continue
 
-        # Report
-        txLogger.info(txHash)
-        txReceipt = client.getTransactionReceipt(txHash)
-        logTx(txReceipt)
-        if txReceipt["status"] != 1:
-            logger.error(f"Error reinforcing mine {mineId}")
-            sendIM(crabInfoMsg)
-            sendIM(f"Error reinforcing mine {mineId}")
-        else:
-            nBorrowedReinforments += 1
-            logger.info(f"Mine {mineId} reinforced correctly")
-            sendIM(crabInfoMsg)
-            sendIM(f"Mine {mineId} reinforced correctly")
+            # Report
+            txLogger.info(txHash)
+            txReceipt = client.getTransactionReceipt(txHash)
+            logTx(txReceipt)
+            if txReceipt["status"] != 1:
+                logger.error(f"Error reinforcing mine {mineId}")
+                sendIM(crabInfoMsg)
+                sendIM(f"Error reinforcing mine {mineId}")
+            else:
+                nBorrowedReinforments += 1
+                logger.info(f"Mine {mineId} reinforced correctly")
+                sendIM(crabInfoMsg)
+                sendIM(f"Mine {mineId} reinforced correctly")
 
-        # Wait some time to avoid renting the same crab for different teams
-        if len(reinforceableMines) > 1:
-            sleep(reinforceDelayInSeconds)
+            # Wait some time to avoid renting the same crab for different teams
+            if len(reinforceableMines) > 1:
+                sleep(reinforceDelayInSeconds)
+
+            break
 
     return nBorrowedReinforments

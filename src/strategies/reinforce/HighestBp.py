@@ -23,6 +23,8 @@ class HighestBp(ReinforceStrategy):
         }
 
     def process(self, game: Game, crabs: List[CrabForLending]) -> List[CrabForLending]:
+        crabs = super().process(game, crabs)
+
         affordableCrabs = [c for c in crabs if weiToTus(c["price"]) < self.maxPrice1]
         return sorted(affordableCrabs, key=lambda c: (-c["battle_point"], c["price"]))
 
