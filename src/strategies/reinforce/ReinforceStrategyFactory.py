@@ -69,9 +69,12 @@ def getBestReinforcement(
             "HighestBpFromInventory", "HighestBpHighCost", "HighestBp",
         ]
     elif lootingOrMining == "MINING":
-        strategies = [
-            "HighestMpFromInventory", "HighestMpHighCost", "HighestMp",
-        ]
+        if teamConfig["reinforceStrategies"][0] == 'NoReinforce':
+            strategies = ['NoReinforce', ]
+        else:
+            strategies = [
+                "HighestMpFromInventory", "HighestMpHighCost", "HighestMp",
+            ]
     else:
         raise StrategyException(
             f"Team is neither LOOTING nor MINING [{lootingOrMining}]"
