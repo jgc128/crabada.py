@@ -22,4 +22,4 @@ if not userAddress:
     logger.error("Specify a user address")
     exit(1)
 
-nSent = sendTeamsMining(User(userAddress), limit=3)
+nSent = sendTeamsMining(User(userAddress), limit=1)
