@@ -19,3 +19,5 @@ Desktop.ini
 .vscode/settings.json
 
 .env*
+
+.no_mine_*
