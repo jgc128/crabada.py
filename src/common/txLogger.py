@@ -4,6 +4,7 @@ sent to the blockchain.
 This logger will print the tx to a transactions.log file
 in addition to the standard handlers specified in logger.py"""
 
+import sys
 import logging
 import logging.handlers
 
@@ -12,13 +13,16 @@ from web3.main import Web3
 from web3.types import TxReceipt
 from src.common.logger import f_handler, c_handler
 
+# user address
+user_address = sys.argv[1] if len(sys.argv) > 1 else 'unknown'
+
 # Create a custom logger
 txLogger = logging.getLogger(__name__)
 txLogger.setLevel("DEBUG")
 
 # Create handlers
 tx_handler = logging.handlers.TimedRotatingFileHandler(
-    "storage/logs/transactions/transactions.log", "midnight"
+    f"storage/logs/transactions/transactions_{user_address}.log", "midnight"
 )
 tx_handler.setLevel("DEBUG")
 
